@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
+const PORT = process.env.PORT || 8000;
 
 const app = express();
 const server = http.createServer(app);
@@ -35,4 +36,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/public/index.html'));
 }); 
 
-server.listen(1234)
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
