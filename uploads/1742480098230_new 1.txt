@@ -1,0 +1,1 @@
+instaloader -l balar_crens_07 -p crens446 profile {p_name}

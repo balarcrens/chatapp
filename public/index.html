@@ -65,11 +65,12 @@
 
     .input-area {
         display: flex;
+        justify-content: center;
         padding: 10px;
     }
 
     input[type="text"] {
-        flex: 1;
+        flex: 0.95;
         padding: 10px;
         border: 1px solid #4CAF50;
     }
@@ -153,7 +154,7 @@
         border-bottom-right-radius: 0px;
         padding: 9px 10px 8px;
         cursor: pointer;
-        margin-left: 5px;
+        margin-left: 7px;
         font-size: 20px;
     }
 
@@ -177,6 +178,37 @@
             height: fit-content;
         }
     }
+
+    .menu-container {
+        position: relative;
+        width: 40px;
+    }
+
+    #plusBtn {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+        border-radius: 50%;
+        padding: 0;
+        margin: 3px 0 0 0;
+    }
+
+    .file-menu {
+        display: none;
+        position: absolute;
+        bottom: 50px;
+        left: 0;
+        background-color: #fff;
+        border: 2px solid #4CAF50;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        padding: 0px;
+        width: 400px;
+    }
+
+    .file-menu.show {
+        display: block;
+    }
 </style>
 
 <body>
@@ -186,6 +218,16 @@
             <div id="chatbox"></div>
 
             <div class="input-area">
+                <div class="menu-container">
+                    <button id="plusBtn" class="btn btn-success">+</button>
+
+                    <div id="fileMenu" class="file-menu text-center p-1">
+                        <input type="file" id="fileInput" class="form-control mb-2">
+                        <button id="sendFileBtn" class="btn btn-primary w-50 m-0">
+                            <i class="fa-solid fa-file-arrow-up"></i> Send File
+                        </button>
+                    </div>
+                </div>
                 <div class="emoji-container">
                     <button id="emojiBtn">😊</button>
                     <div id="emojiPickerWrapper">
@@ -213,6 +255,10 @@
             const emojiBtn = document.getElementById('emojiBtn');
             const emojiPickerWrapper = document.getElementById('emojiPickerWrapper');
             const emojiPicker = document.getElementById('emojiPicker');
+            const plusBtn = document.getElementById('plusBtn');
+            const fileMenu = document.getElementById('fileMenu');
+            const fileInput = document.getElementById('fileInput');
+            const sendFileBtn = document.getElementById('sendFileBtn');
 
             let name = "";
             while (!name.trim()) {
@@ -220,6 +266,10 @@
             }
 
             socket.emit("name", name);
+
+            plusBtn.addEventListener('click', () => {
+                fileMenu.classList.toggle('show');
+            });
 
             emojiBtn.addEventListener('click', () => {
                 emojiPickerWrapper.style.display =
@@ -233,7 +283,12 @@
 
             const appendMessage = (message, type) => {
                 const msgElement = document.createElement('div');
-                msgElement.innerText = message;
+                if(typeof message==="string") {
+                    msgElement.innerText = message;
+                }
+                else {
+                    msgElement.innerHTML = message;
+                }
                 msgElement.classList.add('message', type);
                 chatbox.appendChild(msgElement);
 
@@ -265,6 +320,28 @@
                 users.forEach(user => addUser(user));
             });
 
+            sendFileBtn.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert("Please select a file to send.");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const fileData = {
+                        name: file.name,
+                        type: file.type,
+                        data: event.target.result
+                    };
+
+                    socket.emit('file-upload', fileData);
+                    appendMessage(`You : `+`<a href="${fileData.data}" download="${file.name}">${file.name}</a>`, 'outgoing');
+
+                    fileMenu.classList.remove('show');
+                };
+                reader.readAsDataURL(file);
+            });
 
             send.addEventListener('click', () => {
                 const msg = message.value.trim();

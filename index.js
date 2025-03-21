@@ -16,12 +16,16 @@ io.on('connection', (socket) => {
     socket.on('name', (name) => {
         users[socket.id] = name;
 
-        io.emit('name', `${name} has joined the chat.`);
+        socket.broadcast.emit('name', `${name} has joined the chat.`);
         io.emit('updateUsers', Object.values(users));
     });
     
     socket.on('msg', (msg) => {
         socket.broadcast.emit('incoming', { name: users[socket.id], message: msg });
+    });
+
+    socket.on('file-upload', (fileData) => {
+        socket.broadcast.emit('file-receive', fileData);
     });
 
     socket.on('disconnect', () => {
