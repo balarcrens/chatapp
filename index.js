@@ -24,9 +24,9 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('incoming', { name: users[socket.id], message: msg });
     });
 
-    socket.on('file-upload', (fileData) => {
-        socket.broadcast.emit('file-receive', fileData);
-    });
+    // socket.on('file-upload', (fileData) => {
+    //     socket.broadcast.emit('file-receive', fileData);
+    // });
 
     socket.on('disconnect', () => {
         io.emit('name', `${users[socket.id]} has left the chat.`);

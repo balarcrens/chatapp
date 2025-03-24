@@ -256,9 +256,9 @@
             const emojiPickerWrapper = document.getElementById('emojiPickerWrapper');
             const emojiPicker = document.getElementById('emojiPicker');
             const plusBtn = document.getElementById('plusBtn');
-            const fileMenu = document.getElementById('fileMenu');
-            const fileInput = document.getElementById('fileInput');
-            const sendFileBtn = document.getElementById('sendFileBtn');
+            // const fileMenu = document.getElementById('fileMenu');
+            // const fileInput = document.getElementById('fileInput');
+            // const sendFileBtn = document.getElementById('sendFileBtn');
 
             let name = "";
             while (!name.trim()) {
@@ -283,7 +283,7 @@
 
             const appendMessage = (message, type) => {
                 const msgElement = document.createElement('div');
-                if(typeof message==="string") {
+                if (typeof message === "string") {
                     msgElement.innerText = message;
                 }
                 else {
@@ -309,8 +309,17 @@
                 }
             };
 
+            function playNotificationSound() {
+                const audio = new Audio("notif.mp3");
+                audio.play();
+            }
+            
             socket.on('incoming', (data) => {
                 appendMessage(`${data.name}: ${data.message}`, 'incoming');
+                playNotificationSound();
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]);
+                }
             });
 
             socket.on('name', (msg) => appendMessage(msg, 'alert'));
@@ -320,28 +329,28 @@
                 users.forEach(user => addUser(user));
             });
 
-            sendFileBtn.addEventListener('click', () => {
-                const file = fileInput.files[0];
-                if (!file) {
-                    alert("Please select a file to send.");
-                    return;
-                }
+            // sendFileBtn.addEventListener('click', () => {
+            //     const file = fileInput.files[0];
+            //     if (!file) {
+            //         alert("Please select a file to send.");
+            //         return;
+            //     }
 
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const fileData = {
-                        name: file.name,
-                        type: file.type,
-                        data: event.target.result
-                    };
+            //     const reader = new FileReader();
+            //     reader.onload = function (event) {
+            //         const fileData = {
+            //             name: file.name,
+            //             type: file.type,
+            //             data: event.target.result
+            //         };
 
-                    socket.emit('file-upload', fileData);
-                    appendMessage(`You : `+`<a href="${fileData.data}" download="${file.name}">${file.name}</a>`, 'outgoing');
+            //         socket.emit('file-upload', fileData);
+            //         appendMessage(`You : `+`<a href="${fileData.data}" download="${file.name}">${file.name}</a>`, 'outgoing');
 
-                    fileMenu.classList.remove('show');
-                };
-                reader.readAsDataURL(file);
-            });
+            //         fileMenu.classList.remove('show');
+            //     };
+            //     reader.readAsDataURL(file);
+            // });
 
             send.addEventListener('click', () => {
                 const msg = message.value.trim();
