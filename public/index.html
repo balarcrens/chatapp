@@ -80,7 +80,7 @@
         color: #fff;
         border: none;
         padding: 11px 15px 9px;
-        margin-left: -10px;
+        margin-left: 2px;
         cursor: pointer;
         border-top-right-radius: 4px;
         border-bottom-right-radius: 4px;
@@ -214,7 +214,7 @@
 <body>
     <div class="container">
         <div class="chat-section">
-            <h1>Chat Application</h1>
+            <h1>Chat Application </h1>
             <div id="chatbox"></div>
 
             <div class="input-area">
@@ -235,12 +235,13 @@
                     </div>
                 </div>
                 <input type="text" name="message" id="message" placeholder="Type your message...">
-                <button id="btnsend"><i class="fa-regular fa-paper-plane fa-lg"></i></button>
+                <button title="send message" id="btnsend"><i class="fa-regular fa-paper-plane fa-lg"></i></button>
+                <button title="clean chat permanently" onclick="localStorage.removeItem('chat-history'); location.reload();"><i class="fa-solid fa-trash fa-lg"></i></button>
             </div>
         </div>
 
         <div class="user-list">
-            <h2>Active Users</h2>
+            <h2>Connected Users</h2>
             <ul id="users"></ul>
         </div>
     </div>
@@ -260,9 +261,17 @@
             // const fileInput = document.getElementById('fileInput');
             // const sendFileBtn = document.getElementById('sendFileBtn');
 
-            let name = "";
-            while (!name.trim()) {
+            let name = localStorage.getItem("chat-username");
+            if (!name) {
                 name = prompt("Enter Your Name: ") || "";
+                name = name.trim();
+
+                while (!name) {
+                    name = prompt("Name cannot be empty. Enter Your Name: ") || "";
+                    name = name.trim();
+                }
+
+                localStorage.setItem("chat-username", name);
             }
 
             socket.emit("name", name);
@@ -281,6 +290,19 @@
                 emojiPickerWrapper.style.display = 'none';
             });
 
+            const loadOldMessages = () => {
+                const chatHistory = JSON.parse(localStorage.getItem("chat-history")) || [];
+                chatHistory.forEach(msg => {
+                    const msgElement = document.createElement('div');
+                    msgElement.innerText = msg.message;
+                    msgElement.classList.add('message', msg.type);
+                    chatbox.appendChild(msgElement);
+                });
+                chatbox.scrollTop = chatbox.scrollHeight;
+            };
+
+            loadOldMessages();
+
             const appendMessage = (message, type) => {
                 const msgElement = document.createElement('div');
                 if (typeof message === "string") {
@@ -293,6 +315,10 @@
                 chatbox.appendChild(msgElement);
 
                 chatbox.scrollTop = chatbox.scrollHeight;
+
+                const chatHistory = JSON.parse(localStorage.getItem("chat-history")) || [];
+                chatHistory.push({ message, type });
+                localStorage.setItem("chat-history", JSON.stringify(chatHistory));
             };
 
             const addUser = (username) => {
@@ -309,17 +335,8 @@
                 }
             };
 
-            function playNotificationSound() {
-                const audio = new Audio("notif.mp3");
-                audio.play();
-            }
-            
             socket.on('incoming', (data) => {
                 appendMessage(`${data.name}: ${data.message}`, 'incoming');
-                playNotificationSound();
-                if (navigator.vibrate) {
-                    navigator.vibrate([200, 100, 200]);
-                }
             });
 
             socket.on('name', (msg) => appendMessage(msg, 'alert'));

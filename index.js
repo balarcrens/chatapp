@@ -23,11 +23,7 @@ io.on('connection', (socket) => {
     socket.on('msg', (msg) => {
         socket.broadcast.emit('incoming', { name: users[socket.id], message: msg });
     });
-
-    // socket.on('file-upload', (fileData) => {
-    //     socket.broadcast.emit('file-receive', fileData);
-    // });
-
+    
     socket.on('disconnect', () => {
         io.emit('name', `${users[socket.id]} has left the chat.`);
         delete users[socket.id];
@@ -41,5 +37,5 @@ app.get('/', (req, res) => {
 }); 
 
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`localhost:${PORT}`);
 });
