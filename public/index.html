@@ -236,12 +236,18 @@
                 </div>
                 <input type="text" name="message" id="message" placeholder="Type your message...">
                 <button title="send message" id="btnsend"><i class="fa-regular fa-paper-plane fa-lg"></i></button>
-                <button title="clean chat permanently" onclick="localStorage.removeItem('chat-history'); location.reload();"><i class="fa-solid fa-trash fa-lg"></i></button>
+                <button title="clean chat permanently"
+                    onclick="localStorage.removeItem('chat-history'); location.reload();"><i
+                        class="fa-solid fa-trash fa-lg"></i></button>
             </div>
         </div>
 
         <div class="user-list">
             <h2>Connected Users</h2>
+            <button class="btn btn-danger" style="margin: 5px 5px 5px auto; display: block;"
+                onclick="rename()">Rename</button>
+            <button class="btn btn-secondary" style="margin: 5px 5px 5px auto; display: block;"
+                onclick="exitChat()">Exit</button>
             <ul id="users"></ul>
         </div>
     </div>
@@ -257,9 +263,7 @@
             const emojiPickerWrapper = document.getElementById('emojiPickerWrapper');
             const emojiPicker = document.getElementById('emojiPicker');
             const plusBtn = document.getElementById('plusBtn');
-            // const fileMenu = document.getElementById('fileMenu');
-            // const fileInput = document.getElementById('fileInput');
-            // const sendFileBtn = document.getElementById('sendFileBtn');
+            const uslist = document.getElementById('users');
 
             let name = localStorage.getItem("chat-username");
             if (!name) {
@@ -297,6 +301,7 @@
                     msgElement.innerText = msg.message;
                     msgElement.classList.add('message', msg.type);
                     chatbox.appendChild(msgElement);
+                    console.log(msg.message);
                 });
                 chatbox.scrollTop = chatbox.scrollHeight;
             };
@@ -346,29 +351,6 @@
                 users.forEach(user => addUser(user));
             });
 
-            // sendFileBtn.addEventListener('click', () => {
-            //     const file = fileInput.files[0];
-            //     if (!file) {
-            //         alert("Please select a file to send.");
-            //         return;
-            //     }
-
-            //     const reader = new FileReader();
-            //     reader.onload = function (event) {
-            //         const fileData = {
-            //             name: file.name,
-            //             type: file.type,
-            //             data: event.target.result
-            //         };
-
-            //         socket.emit('file-upload', fileData);
-            //         appendMessage(`You : `+`<a href="${fileData.data}" download="${file.name}">${file.name}</a>`, 'outgoing');
-
-            //         fileMenu.classList.remove('show');
-            //     };
-            //     reader.readAsDataURL(file);
-            // });
-
             send.addEventListener('click', () => {
                 const msg = message.value.trim();
                 if (msg) {
@@ -378,6 +360,18 @@
                 }
             });
         };
+
+        function rename() {
+            let newName = prompt("ReEnter your Name : ") || "";
+            newName = newName.trim();
+
+            while (!newName) {
+                newName = prompt("Name cannot be empty. ReEnter Your Name: ") || "";
+                newName = newName.trim();
+            }
+
+            localStorage.setItem("chat-username", newName);
+        }
     </script>
 </body>
 
