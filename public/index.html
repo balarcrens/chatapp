@@ -301,7 +301,7 @@
                     msgElement.innerText = msg.message;
                     msgElement.classList.add('message', msg.type);
                     chatbox.appendChild(msgElement);
-                    console.log(msg.message);
+                    // console.log(msg.message);
                 });
                 chatbox.scrollTop = chatbox.scrollHeight;
             };
@@ -371,6 +371,10 @@
             }
 
             localStorage.setItem("chat-username", newName);
+        }
+
+        function exitChat() {
+            location.replace('https://www.google.com/')
         }
     </script>
 </body>
