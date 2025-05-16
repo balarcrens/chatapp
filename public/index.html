@@ -100,7 +100,7 @@
 
     .message {
         margin: 5px 0;
-        padding: 8px 12px;
+        padding: 8px;
         border-radius: 6px;
     }
 
@@ -344,10 +344,27 @@
                 const chatHistory = JSON.parse(localStorage.getItem("chat-history")) || [];
                 chatHistory.forEach(msg => {
                     const msgElement = document.createElement('div');
-                    msgElement.style.overflowY = "auto";
-                    msgElement.style.textWrap = "wrap";
-                    msgElement.innerHTML = msg.message;
                     msgElement.classList.add('message', msg.type);
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.innerHTML = msg.message;
+                    msgElement.appendChild(contentDiv);
+
+                    if (msg.date) {
+                        const dateSpan = document.createElement('span');
+                        dateSpan.innerText = msg.date;
+                        dateSpan.style.fontSize = '0.75em';
+                        dateSpan.style.color = '#666';
+                        dateSpan.style.position = 'absolute';
+                        dateSpan.style.bottom = '4px';
+                        dateSpan.style.left = '8px';
+
+                        msgElement.style.position = 'relative';
+                        msgElement.style.paddingBottom = '20px';
+
+                        msgElement.appendChild(dateSpan);
+                    }
+
                     chatbox.appendChild(msgElement);
                 });
                 chatbox.scrollTop = chatbox.scrollHeight;
@@ -357,15 +374,33 @@
 
             const appendMessage = (message, type) => {
                 const msgElement = document.createElement('div');
-                msgElement.innerHTML = message;
-
                 msgElement.classList.add('message', type);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = message;
+                msgElement.appendChild(contentDiv);
+
+                const now = new Date();
+                const dateString = now.toLocaleString();
+
+                const dateSpan = document.createElement('span');
+                dateSpan.innerText = dateString;
+                dateSpan.style.fontSize = '0.75em';
+                dateSpan.style.color = '#666';
+                dateSpan.style.position = 'absolute';
+                dateSpan.style.bottom = '4px';
+                dateSpan.style.left = '8px';
+
+                msgElement.style.position = 'relative';
+                msgElement.style.paddingBottom = '20px';
+
+                msgElement.appendChild(dateSpan);
                 chatbox.appendChild(msgElement);
 
                 chatbox.scrollTop = chatbox.scrollHeight;
 
                 const chatHistory = JSON.parse(localStorage.getItem("chat-history")) || [];
-                chatHistory.push({ message, type });
+                chatHistory.push({ message, type, date: dateString });
                 localStorage.setItem("chat-history", JSON.stringify(chatHistory));
             };
 
