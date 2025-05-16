@@ -16,7 +16,7 @@
     body {
         font-family: Arial, sans-serif;
         background-color: #f3f3f3;
-        display: flex;
+        /* display: flex; */
         height: 100vh;
         justify-content: center;
         align-items: center;
@@ -212,7 +212,11 @@
 </style>
 
 <body>
-    <div class="container">
+    <header class="d-flex p-3" style="justify-content: space-between;">
+        <h2 style="display: contents; color: #45a049;">ChatTalk</h2>
+        <img src="./download.png" alt="" height="50px" width="50px">
+    </header>
+    <div class="container px-5">
         <div class="chat-section">
             <h1>Chat Application </h1>
             <div id="chatbox"></div>
