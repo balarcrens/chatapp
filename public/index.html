@@ -2,476 +2,250 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Application</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <meta charset="UTF-8" />
+    <title>Responsive Chat App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Emoji Picker -->
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.0.3/index.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f3f3f3;
-        height: 100vh;
-        justify-content: center;
-        align-items: center;
-        margin: 0;
-        width: 100%;
-    }
 
-    .container {
-        display: flex;
-        width: 100%;
-        max-width: 100%;
-        height: 100%;
-        border: 2px solid #4CAF50;
-        border-radius: 12px;
-        overflow: hidden;
-        justify-content: center;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
 
-    .chat-section {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        height: 100%;
-        width: 75%;
-        padding: 10px;
-    }
-
-    h1,
-    h2 {
-        text-align: center;
-        margin: 0;
-        padding: 10px;
-        background-color: #4CAF50;
-        color: #fff;
-    }
-
-    .head-contain {
-        background-color: #4CAF50;
-        border-radius: 7px;
-    }
-
-    .head-contain img {
-        border-radius: 7px;
-        border: 2px solid #4CAF50;
-    }
-
-    #chatbox {
-        height: 90%;
-        overflow-y: auto;
-        background-color: #f9f9f9;
-        border-bottom: 2px solid #4CAF50;
-    }
-
-    .input-area {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        padding: 10px;
-    }
-
-    input[type="text"] {
-        flex: 0.95;
-        padding: 10px;
-        border: 1px solid #4CAF50;
-    }
-
-    button {
-        background-color: #4CAF50;
-        color: #fff;
-        border: none;
-        padding: 11px 15px 9px;
-        margin-left: 2px;
-        cursor: pointer;
-        border-top-right-radius: 4px;
-        border-bottom-right-radius: 4px;
-    }
-
-    button:hover {
-        background-color: #45a049;
-    }
-
-    .message {
-        margin: 5px 0;
-        padding: 8px;
-        border-radius: 6px;
-    }
-
-    .incoming {
-        background-color: #e3fcef;
-        text-align: left;
-    }
-
-    .outgoing {
-        background-color: #d0e6fd;
-        text-align: right;
-    }
-
-    .alert {
-        background-color: #ffeb3b;
-        text-align: center;
-    }
-
-    .user-list {
-        width: 25%;
-        border-left: 2px solid #4CAF50;
-        background-color: #f1f1f1;
-        padding: 15px 0px;
-    }
-
-    #users {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    #users li {
-        padding: 10px;
-        border-bottom: 1px solid #ccc;
-    }
-
-    .emoji-container {
-        position: relative;
-    }
-
-    #emojiPickerWrapper {
-        display: none;
-        position: absolute;
-        bottom: 40px;
-        right: 0;
-        left: 0px;
-        z-index: 10;
-        border: 2px solid #4CAF50;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        background-color: #fff;
-    }
-
-    #emojiBtn {
-        background-color: #4CAF50;
-        border: none;
-        border-top-left-radius: 5px;
-        border-top-right-radius: 0px;
-        border-bottom-left-radius: 5px;
-        border-bottom-right-radius: 0px;
-        padding: 9px 10px 8px;
-        cursor: pointer;
-        margin-left: 7px;
-        font-size: 20px;
-    }
-
-    #emojiBtn:hover {
-        background-color: #45a049;
-    }
-
-    @media (max-width: 768px) {
+    <style>
         body {
-            height: 100%;
-            margin: 10px 0px;
+            font-family: 'Inter', sans-serif;
         }
+    </style>
+</head>
 
-        .container {
-            flex-direction: column;
-            height: auto;
-        }
+<body class="h-screen bg-slate-100 overflow-hidden">
 
-        .chat-section {
-            width: 100%;
-            height: 800px;
-        }
+    <div class="flex h-full">
 
-        .user-list {
-            width: 100%;
-            height: fit-content;
-        }
+        <!-- CHAT SECTION -->
+        <div class="flex flex-col flex-1">
 
-        #message {
-            min-width: 0px;
-            height: 43px;
-        }
+            <!-- HEADER -->
+            <div class="flex items-center justify-between px-4 py-3 bg-emerald-600 text-white shadow">
 
-        #plusBtn,
-        #btnsend,
-        #btnDel {
-            height: 43px;
-            width: 40px;
-            padding: 0;
-        }
+                <div class="flex items-center gap-3">
+                    <!-- MOBILE MENU -->
+                    <button id="menuBtn" class="md:hidden text-xl focus:outline-none">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
 
-        #plusBtn {
-            margin: 0px;
-        }
+                    <h1 class="text-lg font-semibold">Chat Application</h1>
+                </div>
 
-        #emojiBtn {
-            display: none;
-        }
-
-        .file-menu {
-            width: 200px;
-        }
-    }
-
-    .menu-container {
-        position: relative;
-        width: 40px;
-    }
-
-    #plusBtn {
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
-        border-radius: 50%;
-        padding: 0;
-        margin: 3px 0 0 0;
-    }
-
-    .file-menu {
-        display: none;
-        position: absolute;
-        bottom: 50px;
-        left: 0;
-        background-color: #fff;
-        border: 2px solid #4CAF50;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        padding: 0px;
-        width: auto;
-        min-width: 250px;
-    }
-
-    .file-menu.show {
-        display: block;
-    }
-</style>
-
-<body>
-    <div class="container p-0">
-        <div class="chat-section">
-            <div class="d-flex head-contain" style="justify-content: space-between;">
-                <h1 class="m-auto">Chat Application </h1>
-                <img src="./download.png" alt="" height="100%" width="68px">
+                <img src="./download.png" class="w-9 h-9 rounded bg-white p-1" />
             </div>
-            <div id="chatbox"></div>
 
-            <div class="input-area px-0">
-                <div class="menu-container">
-                    <button id="plusBtn" class="btn btn-success">+</button>
+            <!-- CHAT BOX -->
+            <div id="chatbox" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+            </div>
 
-                    <div id="fileMenu" class="file-menu text-center p-1">
-                        <input type="file" id="fileInput" class="form-control mb-2">
-                        <button id="sendFileBtn" class="btn btn-primary w-50 m-0">
-                            <i class="fa-solid fa-file-arrow-up"></i> Send File
-                        </button>
-                    </div>
+            <!-- INPUT BAR -->
+            <div class="relative flex items-center gap-2 p-2 border-t bg-white">
+
+                <!-- ATTACH -->
+                <button id="plusBtn" class="w-9 h-9 rounded-full bg-emerald-500 text-white">
+                    +
+                </button>
+
+                <!-- FILE MENU -->
+                <div id="fileMenu" class="absolute bottom-14 left-2 bg-white rounded-xl shadow-lg p-3 w-60 hidden">
+                    <input type="file" id="fileInput" class="w-full border rounded mb-2 text-sm" />
+                    <button id="sendFileBtn" class="w-full bg-emerald-500 text-white py-2 rounded">
+                        Send File
+                    </button>
                 </div>
-                <div class="emoji-container">
-                    <button id="emojiBtn">😊</button>
-                    <div id="emojiPickerWrapper">
-                        <emoji-picker id="emojiPicker"></emoji-picker>
-                    </div>
+
+                <!-- EMOJI -->
+                <button id="emojiBtn" class="w-9 h-9 rounded-full bg-emerald-500 text-white hidden sm:block">
+                    😊
+                </button>
+
+                <div id="emojiPickerWrapper" class="absolute bottom-14 left-12 hidden z-50">
+                    <emoji-picker id="emojiPicker"></emoji-picker>
                 </div>
-                <input type="text" name="message" id="message" placeholder="Type your message...">
-                <button title="send message" id="btnsend"><i class="fa-regular fa-paper-plane fa-lg"></i></button>
-                <button title="clean chat permanently" id="btnDel"
-                    onclick="localStorage.removeItem('chat-history'); location.reload();"><i
-                        class="fa-solid fa-trash fa-lg"></i></button>
+
+                <!-- MESSAGE -->
+                <input id="message" type="text" placeholder="Type a message..."
+                    class="flex-1 px-4 py-2 border rounded-full focus:ring-2 focus:ring-emerald-500" />
+
+                <!-- SEND -->
+                <button id="btnsend" class="w-9 h-9 rounded-full bg-emerald-500 text-white">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </div>
 
-        <div class="user-list d-flex flex-column">
-            <h2>Connected Users</h2>
-            <ul id="users"></ul>
-            <div class="d-flex mt-2" style="justify-content: space-evenly;">
-                <button class="btn btn-danger" style="display: block;" onclick="rename()">Rename</button>
-                <button class="btn btn-secondary" style="display: block;" onclick="exitChat()">Exit</button>
+        <!-- USERS SIDEBAR (DESKTOP) -->
+        <aside class="hidden md:flex w-72 bg-white border-l flex-col shadow">
+            <h2 class="p-4 text-lg font-semibold border-b">
+                Connected Users
+            </h2>
+            <ul id="users" class="flex-1 overflow-y-auto divide-y"></ul>
+
+            <div class="p-3 flex gap-2">
+                <button onclick="rename()" class="flex-1 bg-emerald-500 text-white py-2 rounded">
+                    Rename
+                </button>
+                <button onclick="exitChat()" class="flex-1 bg-gray-500 text-white py-2 rounded">
+                    Exit
+                </button>
+            </div>
+        </aside>
+
+        <!-- MOBILE USERS MENU -->
+        <div id="mobileUsers" class="fixed inset-0 bg-black/40 hidden z-50">
+
+            <div class="absolute left-0 top-0 w-72 h-full bg-white shadow flex flex-col">
+                <h2 class="p-4 text-lg font-semibold border-b flex justify-between">
+                    Users
+                    <button onclick="toggleUsers()">
+                        ✕
+                    </button>
+                </h2>
+                <ul id="usersMobile" class="flex-1 overflow-y-auto divide-y"></ul>
+
+                <div class="p-3 flex gap-2">
+                    <button onclick="rename()" class="flex-1 bg-emerald-500 text-white py-2 rounded">
+                        Rename
+                    </button>
+                    <button onclick="exitChat()" class="flex-1 bg-gray-500 text-white py-2 rounded">
+                        Exit
+                    </button>
+                </div>
             </div>
         </div>
+
     </div>
 
+    <!-- SCRIPT -->
     <script>
         const socket = io();
-        window.onload = function () {
-            const message = document.getElementById("message");
-            const send = document.getElementById("btnsend");
-            const chatbox = document.getElementById("chatbox");
-            const userList = document.getElementById("users");
-            const emojiBtn = document.getElementById('emojiBtn');
-            const emojiPickerWrapper = document.getElementById('emojiPickerWrapper');
-            const emojiPicker = document.getElementById('emojiPicker');
-            const plusBtn = document.getElementById('plusBtn');
-            const uslist = document.getElementById('users');
-            const fileInput = document.getElementById('fileInput');
-            const sendFileBtn = document.getElementById('sendFileBtn');
-            const fileMenu = document.getElementById('fileMenu'); // Add this line near top of script
 
-            let name = localStorage.getItem("chat-username");
-            if (!name) {
-                name = prompt("Enter Your Name: ") || "";
-                name = name.trim();
+        const chatbox = document.getElementById("chatbox");
+        const users = document.getElementById("users");
+        const usersMobile = document.getElementById("usersMobile");
+        const menuBtn = document.getElementById("menuBtn");
+        const mobileUsers = document.getElementById("mobileUsers");
 
-                while (!name) {
-                    name = prompt("Name cannot be empty. Enter Your Name: ") || "";
-                    name = name.trim();
-                }
+        const message = document.getElementById("message");
+        const emojiBtn = document.getElementById("emojiBtn");
+        const emojiPickerWrapper = document.getElementById("emojiPickerWrapper");
+        const emojiPicker = document.getElementById("emojiPicker");
 
-                localStorage.setItem("chat-username", name);
+        const plusBtn = document.getElementById("plusBtn");
+        const fileMenu = document.getElementById("fileMenu");
+        const fileInput = document.getElementById("fileInput");
+        const sendFileBtn = document.getElementById("sendFileBtn");
+
+        let name = localStorage.getItem("chat-username");
+        if (!name) {
+            name = prompt("Enter your name").trim();
+            localStorage.setItem("chat-username", name);
+        }
+
+        socket.emit("name", name);
+
+        menuBtn.onclick = toggleUsers;
+        function toggleUsers() {
+            mobileUsers.classList.toggle("hidden");
+        }
+
+        plusBtn.onclick = () => fileMenu.classList.toggle("hidden");
+
+        emojiBtn.onclick = () =>
+            emojiPickerWrapper.classList.toggle("hidden");
+
+        emojiPicker.addEventListener("emoji-click", e => {
+            message.value += e.detail.unicode;
+            emojiPickerWrapper.classList.add("hidden");
+        });
+
+        function appendMessage(text, type) {
+            const div = document.createElement("div");
+            div.className =
+                type === "outgoing"
+                    ? "bg-emerald-500 text-white ml-auto max-w-[75%] rounded-xl p-3 shadow"
+                    : "bg-white text-gray-800 max-w-[75%] rounded-xl p-3 shadow";
+
+            div.innerHTML = text;
+            chatbox.appendChild(div);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        document.getElementById("btnsend").onclick = () => {
+            if (!message.value.trim()) return;
+            socket.emit("msg", message.value);
+            appendMessage("You: " + message.value, "outgoing");
+            message.value = "";
+        };
+
+        socket.on("incoming", (data) => {
+            if (data.type === "text") {
+                appendMessage(`${data.name}: ${data.message}`, "incoming");
             }
 
-            socket.emit("name", name);
+            if (data.type === "file") {
+                appendMessage(
+                    `<b>${data.name}:</b><br>
+             <img src="${data.fileContent}" class="rounded max-w-[200px]">`,
+                    "incoming"
+                );
+            }
+        });
 
-            plusBtn.addEventListener('click', () => {
-                fileMenu.classList.toggle('show');
+        socket.on("updateUsers", list => {
+            users.innerHTML = "";
+            usersMobile.innerHTML = "";
+            list.forEach(u => {
+                const li1 = document.createElement("li");
+                const li2 = document.createElement("li");
+                li1.className = li2.className = "px-4 py-3";
+                li1.innerText = li2.innerText = u;
+                users.appendChild(li1);
+                usersMobile.appendChild(li2);
             });
+        });
 
-            emojiBtn.addEventListener('click', () => {
-                emojiPickerWrapper.style.display =
-                    emojiPickerWrapper.style.display === 'none' ? 'block' : 'none';
-            });
-
-            emojiPicker.addEventListener('emoji-click', (event) => {
-                message.value += event.detail.unicode;
-                emojiPickerWrapper.style.display = 'none';
-            });
-
-            const loadOldMessages = () => {
-                const chatHistory = JSON.parse(localStorage.getItem("chat-history")) || [];
-                chatHistory.forEach(msg => {
-                    const msgElement = document.createElement('div');
-                    msgElement.classList.add('message', msg.type);
-
-                    const contentDiv = document.createElement('div');
-                    contentDiv.innerHTML = msg.message;
-                    msgElement.appendChild(contentDiv);
-
-                    if (msg.date) {
-                        const dateSpan = document.createElement('span');
-                        dateSpan.innerText = msg.date;
-                        dateSpan.style.fontSize = '0.75em';
-                        dateSpan.style.color = '#666';
-                        dateSpan.style.position = 'absolute';
-                        dateSpan.style.bottom = '4px';
-                        dateSpan.style.left = '8px';
-
-                        msgElement.style.position = 'relative';
-                        msgElement.style.paddingBottom = '20px';
-
-                        msgElement.appendChild(dateSpan);
-                    }
-
-                    chatbox.appendChild(msgElement);
+        sendFileBtn.onclick = () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                socket.emit("file", {
+                    sender: name,
+                    fileName: file.name,
+                    fileContent: e.target.result
                 });
-                chatbox.scrollTop = chatbox.scrollHeight;
+                appendMessage(
+                    `<b>You:</b><br><img src="${e.target.result}" class="rounded max-w-[200px]">`,
+                    "outgoing"
+                );
             };
-
-            loadOldMessages();
-
-            const appendMessage = (message, type) => {
-                const msgElement = document.createElement('div');
-                msgElement.classList.add('message', type);
-
-                const contentDiv = document.createElement('div');
-                contentDiv.innerHTML = message;
-                msgElement.appendChild(contentDiv);
-
-                const now = new Date();
-                const dateString = now.toLocaleString();
-
-                const dateSpan = document.createElement('span');
-                dateSpan.innerText = dateString;
-                dateSpan.style.fontSize = '0.75em';
-                dateSpan.style.color = '#666';
-                dateSpan.style.position = 'absolute';
-                dateSpan.style.bottom = '4px';
-                dateSpan.style.left = '8px';
-
-                msgElement.style.position = 'relative';
-                msgElement.style.paddingBottom = '20px';
-
-                msgElement.appendChild(dateSpan);
-                chatbox.appendChild(msgElement);
-
-                chatbox.scrollTop = chatbox.scrollHeight;
-
-                const chatHistory = JSON.parse(localStorage.getItem("chat-history")) || [];
-                chatHistory.push({ message, type, date: dateString });
-                localStorage.setItem("chat-history", JSON.stringify(chatHistory));
-            };
-
-            const addUser = (username) => {
-                const userElement = document.createElement('li');
-                userElement.innerText = username;
-                userElement.id = `user-${username}`;
-                userList.appendChild(userElement);
-            };
-
-            const removeUser = (username) => {
-                const userElement = document.getElementById(`user-${username}`);
-                if (userElement) {
-                    userElement.remove();
-                }
-            };
-
-            socket.on('incoming', (data) => {
-                appendMessage(`${data.name}: ${data.message}`, 'incoming');
-            });
-
-            socket.on('name', (msg) => appendMessage(msg, 'alert'));
-
-            socket.on('updateUsers', (users) => {
-                userList.innerHTML = '';
-                users.forEach(user => addUser(user));
-            });
-
-            send.addEventListener('click', () => {
-                const msg = message.value.trim();
-                if (msg) {
-                    socket.emit("msg", msg);
-                    appendMessage(`You: ${msg}`, 'outgoing');
-                    message.value = '';
-                }
-            });
-
-            sendFileBtn.addEventListener('click', () => {
-                const file = fileInput.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        const fileContent = e.target.result;
-                        socket.emit("file", {
-                            fileName: file.name,
-                            fileContent,
-                            sender: name
-                        });
-
-                        const imgHTML = `<b>You:</b><br><img src="${fileContent}" alt="${file.name}" style="max-width: 200px; max-height: 150px; border-radius: 5px;" />`;
-                        appendMessage(imgHTML, 'outgoing');
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
+            reader.readAsDataURL(file);
         };
 
         function rename() {
-            let newName = prompt("ReEnter your Name : ") || "";
-            newName = newName.trim();
-
-            while (!newName) {
-                newName = prompt("Name cannot be empty. ReEnter Your Name: ") || "";
-                newName = newName.trim();
-            }
-
-            localStorage.setItem("chat-username", newName);
+            const n = prompt("Enter new name");
+            if (n) localStorage.setItem("chat-username", n);
         }
 
         function exitChat() {
-            location.replace('https://www.google.com/')
+            location.href = "https://google.com";
         }
     </script>
 </body>

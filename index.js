@@ -2,51 +2,89 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
+
 const PORT = process.env.PORT || 7777;
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
-    cors: { origin: "*" }
+    cors: { origin: "*" },
+    maxHttpBufferSize: 1e7 // 🔒 10MB file limit
 });
 
-app.use(express.static(path.join(__dirname, "/public")));
+app.use(express.static(path.join(__dirname, "public")));
 
 const users = {};
 
-io.on('connection', (socket) => {
-    socket.on('name', (name) => {
-        users[socket.id] = name;
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
 
-        socket.broadcast.emit('name', `${name} has joined the chat.`);
-        io.emit('updateUsers', Object.values(users));
+    // USER JOIN
+    socket.on("name", (name) => {
+        if (!name || !name.trim()) return;
+
+        users[socket.id] = name.trim();
+
+        socket.broadcast.emit("name", `${name} joined the chat`);
+        io.emit("updateUsers", Object.values(users));
     });
 
-    socket.on('msg', (msg) => {
-        socket.broadcast.emit('incoming', { name: users[socket.id], message: msg });
-    });
+    // TEXT MESSAGE
+    socket.on("msg", (msg) => {
+        if (!users[socket.id] || !msg || !msg.trim()) return;
 
-    socket.on('disconnect', () => {
-        io.emit('name', `${users[socket.id]} has left the chat.`);
-        delete users[socket.id];
-
-        io.emit('updateUsers', Object.values(users));
-    });
-
-    socket.on('file', (data) => {
-        const imgHTML = `<b>${data.sender}:</b><br><img src="${data.fileContent}" alt="${data.fileName}" style="max-width: 200px; max-height: 150px; border-radius: 5px;" />`;
-
-        socket.broadcast.emit('incoming', {
-            name: users[socket.id], // get sender's name from `users`
-            message: imgHTML
+        socket.broadcast.emit("incoming", {
+            type: "text",
+            name: users[socket.id],
+            message: msg.trim()
         });
     });
-})
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '/public/index.html'));
+    // FILE MESSAGE (IMAGE ONLY)
+    socket.on("file", (data) => {
+        if (!users[socket.id]) return;
+        if (!data || !data.fileContent || !data.fileName) return;
+
+        // Allow only images
+        if (!data.fileContent.startsWith("data:image")) {
+            socket.emit("name", "Only image files are allowed");
+            return;
+        }
+
+        socket.broadcast.emit("incoming", {
+            type: "file",
+            name: users[socket.id],
+            fileName: data.fileName,
+            fileContent: data.fileContent
+        });
+    });
+
+    // USER DISCONNECT
+    socket.on("disconnect", () => {
+        const username = users[socket.id];
+        if (!username) return;
+
+        delete users[socket.id];
+
+        socket.broadcast.emit("name", `${username} left the chat`);
+        io.emit("updateUsers", Object.values(users));
+
+        console.log("User disconnected:", socket.id);
+    });
+
+    // ERROR HANDLING
+    socket.on("error", (err) => {
+        console.error("Socket error:", err.message);
+    });
 });
 
+// ROUTE
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// START SERVER
 server.listen(PORT, () => {
-    console.log(`http://localhost:${PORT}`);
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
