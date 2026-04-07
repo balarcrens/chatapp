@@ -3,251 +3,683 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Responsive Chat App</title>
+    <title>Nebula Chat | Premium Messenger</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Tailwind -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        secondary: '#64748b',
+                        accent: '#3b82f6',
+                    }
+                }
+            }
+        }
+    </script>
 
-    <!-- Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-    <!-- Emoji Picker -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.0.3/index.js"></script>
+    <!-- Emoji Picker Element -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 
     <!-- Socket.io -->
     <script src="/socket.io/socket.io.js"></script>
 
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        #contextMenu {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+        }
+
+        #imagePreviewModal {
+            display: none;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+        }
+        
+        emoji-picker {
+            width: 320px;
+            height: 400px;
+            --num-columns: 8;
+            --category-emoji-size: 1.5rem;
         }
     </style>
 </head>
 
-<body class="h-screen bg-slate-100 overflow-hidden">
+<body class="h-screen flex items-center justify-center overflow-hidden">
 
-    <div class="flex h-full">
-
-        <!-- CHAT SECTION -->
-        <div class="flex flex-col flex-1">
-
-            <!-- HEADER -->
-            <div class="flex items-center justify-between px-4 py-3 bg-emerald-600 text-white shadow">
-
-                <div class="flex items-center gap-3">
-                    <!-- MOBILE MENU -->
-                    <button id="menuBtn" class="md:hidden text-xl focus:outline-none">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
-
-                    <h1 class="text-lg font-semibold">Chat Application</h1>
-                </div>
-
-                <img src="./download.png" class="w-9 h-9 rounded bg-white p-1" />
+    <!-- SPLASH SCREEN / LOGIN -->
+    <div id="splashScreen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent opacity-50"></div>
+        
+        <div class="relative w-full max-w-md p-8 glass rounded-3xl shadow-2xl text-center transform transition-all">
+            <div class="w-24 h-24 bg-primary rounded-3xl mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-lg shadow-primary/30">
+                <i class="fa-solid fa-paper-plane"></i>
             </div>
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Welcome to Nebula</h1>
+            <p class="text-slate-500 mb-8" id="roomLabel">Connecting to secure room...</p>
 
-            <!-- CHAT BOX -->
-            <div id="chatbox" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-            </div>
-
-            <!-- INPUT BAR -->
-            <div class="relative flex items-center gap-2 p-2 border-t bg-white">
-
-                <!-- ATTACH -->
-                <button id="plusBtn" class="w-9 h-9 rounded-full bg-emerald-500 text-white">
-                    +
-                </button>
-
-                <!-- FILE MENU -->
-                <div id="fileMenu" class="absolute bottom-14 left-2 bg-white rounded-xl shadow-lg p-3 w-60 hidden">
-                    <input type="file" id="fileInput" class="w-full border rounded mb-2 text-sm" />
-                    <button id="sendFileBtn" class="w-full bg-emerald-500 text-white py-2 rounded">
-                        Send File
-                    </button>
-                </div>
-
-                <!-- EMOJI -->
-                <button id="emojiBtn" class="w-9 h-9 rounded-full bg-emerald-500 text-white hidden sm:block">
-                    😊
-                </button>
-
-                <div id="emojiPickerWrapper" class="absolute bottom-14 left-12 hidden z-50">
-                    <emoji-picker id="emojiPicker"></emoji-picker>
-                </div>
-
-                <!-- MESSAGE -->
-                <input id="message" type="text" placeholder="Type a message..."
-                    class="flex-1 px-4 py-2 border rounded-full focus:ring-2 focus:ring-emerald-500" />
-
-                <!-- SEND -->
-                <button id="btnsend" class="w-9 h-9 rounded-full bg-emerald-500 text-white">
-                    <i class="fa-solid fa-paper-plane"></i>
+            <div class="space-y-4">
+                <input type="text" id="usernameInput" placeholder="Enter your name..."
+                    class="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg text-slate-800 font-medium" />
+                <button id="joinBtn"
+                    class="w-full bg-primary hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/25 transition-all transform active:scale-[0.98]">
+                    Join Chat
                 </button>
             </div>
+            <p class="mt-8 text-slate-400 text-sm">Room ID: <span id="currentRoomId" class="font-mono font-bold text-slate-600">......</span></p>
         </div>
+    </div>
 
-        <!-- USERS SIDEBAR (DESKTOP) -->
-        <aside class="hidden md:flex w-72 bg-white border-l flex-col shadow">
-            <h2 class="p-4 text-lg font-semibold border-b">
-                Connected Users
-            </h2>
-            <ul id="users" class="flex-1 overflow-y-auto divide-y"></ul>
+    <!-- MAIN APP INTERFACE -->
+    <div id="mainApp" class="hidden w-full h-full flex flex-col md:flex-row bg-slate-50 relative">
+        
+        <!-- SIDEBAR (Users List) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-80 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-xl">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-slate-800">People</h2>
+                <button id="closeSidebarBtn" class="md:hidden text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto py-4">
+                <div class="px-6 mb-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="searchUsers" placeholder="Search users..." class="w-full pl-11 pr-4 py-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm">
+                    </div>
+                </div>
+                
+                <ul id="userList" class="space-y-1 px-3">
+                    <!-- Users injected here -->
+                </ul>
+            </div>
 
-            <div class="p-3 flex gap-2">
-                <button onclick="rename()" class="flex-1 bg-emerald-500 text-white py-2 rounded">
-                    Rename
-                </button>
-                <button onclick="exitChat()" class="flex-1 bg-gray-500 text-white py-2 rounded">
-                    Exit
-                </button>
+            <div class="p-6 border-t border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-4 mb-6 text-left">
+                    <div id="myAvatar" class="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                        ?
+                    </div>
+                    <div>
+                        <p id="myNameLabel" class="font-bold text-slate-800 leading-tight">User Name</p>
+                        <p class="text-xs text-emerald-500 font-medium">Online</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="handleRename()" class="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    </button>
+                    <button onclick="copyRoomLink()" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-share-nodes text-xs"></i> Share
+                    </button>
+                    <button onclick="handleLogout()" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    </button>
+                </div>
             </div>
         </aside>
 
-        <!-- MOBILE USERS MENU -->
-        <div id="mobileUsers" class="fixed inset-0 bg-black/40 hidden z-50">
-
-            <div class="absolute left-0 top-0 w-72 h-full bg-white shadow flex flex-col">
-                <h2 class="p-4 text-lg font-semibold border-b flex justify-between">
-                    Users
-                    <button onclick="toggleUsers()">
-                        ✕
+        <!-- CHAT AREA -->
+        <main class="flex-1 flex flex-col h-full bg-slate-50 md:ml-80 overflow-hidden">
+            
+            <!-- CHAT HEADER -->
+            <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 flex items-center justify-between z-30">
+                <div class="flex items-center gap-4">
+                    <button id="openSidebarBtn" class="md:hidden w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                        <i class="fa-solid fa-bars"></i>
                     </button>
-                </h2>
-                <ul id="usersMobile" class="flex-1 overflow-y-auto divide-y"></ul>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 leading-tight" id="headerRoomName">Global Chat</h3>
+                            <p id="systemStatus" class="text-xs text-slate-400">Syncing with server...</p>
+                        </div>
+                    </div>
+                </div>
 
-                <div class="p-3 flex gap-2">
-                    <button onclick="rename()" class="flex-1 bg-emerald-500 text-white py-2 rounded">
-                        Rename
-                    </button>
-                    <button onclick="exitChat()" class="flex-1 bg-gray-500 text-white py-2 rounded">
-                        Exit
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex -space-x-3 overflow-hidden" id="userAvatarsPreview"></div>
+                    <button onclick="copyRoomLink()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-link"></i> <span class="hidden md:inline">Share Room</span>
                     </button>
                 </div>
-            </div>
-        </div>
+            </header>
 
+            <!-- MESSAGES CONTAINER -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col"></div>
+
+            <!-- TYPING STATUS -->
+            <div id="typingIndicator" class="px-6 py-2 text-xs text-slate-400 font-medium h-6 opacity-0 transition-opacity flex items-center gap-2">
+                <div class="flex gap-1">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+                <span id="typingText">Someone is typing...</span>
+            </div>
+
+            <!-- INPUT AREA -->
+            <footer class="p-6 bg-slate-50">
+                <div class="relative max-w-5xl mx-auto flex items-end gap-3 glass p-2 rounded-2xl shadow-lg border-slate-200">
+                    <div class="flex items-center gap-1 mb-1">
+                        <button id="attachBtn" class="w-10 h-10 rounded-xl hover:bg-slate-100 text-slate-400 transition-all">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <input type="file" id="fileInput" class="hidden">
+                    </div>
+
+                    <div class="flex-1 relative flex justify-center">
+                        <textarea id="messageInput" placeholder="Type your message..." rows="1"
+                            class="w-full py-3 px-4 bg-transparent outline-none resize-none text-slate-700 max-h-32 min-h-[44px]"></textarea>
+                    </div>
+
+                    <div class="flex items-center gap-1 mb-1 relative">
+                        <button id="emojiBtn" class="w-10 h-10 rounded-xl hover:bg-slate-100 text-slate-400 transition-all flex items-center justify-center">
+                            <i class="fa-regular fa-face-smile"></i>
+                        </button>
+                        <div id="emojiPickerWrapper" class="absolute bottom-full right-0 mb-4 hidden z-50 shadow-2xl rounded-2xl overflow-hidden animate-bounce-in">
+                            <emoji-picker></emoji-picker>
+                        </div>
+                        <button id="sendBtn" class="w-10 h-10 rounded-xl bg-primary hover:bg-emerald-600 text-white shadow-lg shadow-primary/20 transition-all flex items-center justify-center disabled:opacity-50 disabled:shadow-none" disabled>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+
+                    <!-- FILE PREVIEW POPUP -->
+                    <div id="filePreview" class="absolute bottom-full left-0 right-0 mb-4 mx-2 p-4 glass rounded-2xl shadow-xl hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <span id="previewTypeLabel" class="text-xs font-bold text-slate-500 flex items-center gap-2 uppercase tracking-wide">
+                                <i class="fa-solid fa-file"></i> FILE PREVIEW
+                            </span>
+                            <button id="cancelFileBtn" class="text-slate-400 hover:text-red-500">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div id="previewContent" class="flex items-center gap-3">
+                            <img id="previewImg" class="rounded-xl h-24 w-24 object-cover shadow-sm bg-slate-100 hidden">
+                            <div id="previewFileCard" class="flex-1 bg-slate-100/50 p-4 rounded-xl flex items-center gap-3 border border-slate-200 hidden">
+                                <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary text-xl">
+                                    <i id="previewFileIcon" class="fa-solid fa-file-lines"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p id="previewFileName" class="text-sm font-bold text-slate-700 truncate">filename.extension</p>
+                                    <p id="previewFileSize" class="text-xs text-slate-500">Unknown size</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </main>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- CONTEXT MENU -->
+    <div id="contextMenu" class="bg-white shadow-2xl rounded-xl border border-slate-100 py-2 w-48 overflow-hidden">
+        <button id="deleteBtn" class="w-full text-left px-4 py-3 hover:bg-red-50 text-red-600 text-sm font-bold flex items-center gap-3 transition-colors">
+            <i class="fa-solid fa-trash-can"></i> Delete for Everyone
+        </button>
+    </div>
+
+    <!-- IMAGE PREVIEW MODAL -->
+    <div id="imagePreviewModal" class="fixed inset-0 flex items-center justify-center p-4">
+        <button id="closePreviewBtn" class="absolute top-6 right-6 text-white text-3xl hover:text-slate-300 transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img id="fullSizeImg" class="max-w-full max-h-full rounded-2xl shadow-2xl transform transition-transform duration-300">
+    </div>
+
     <script>
         const socket = io();
+        
+        // State
+        let roomId = window.location.hash.substring(1) || Math.random().toString(36).substr(2, 6).toUpperCase();
+        if (!window.location.hash) window.location.hash = roomId;
+        
+        let myName = localStorage.getItem('chat-username');
+        let activeUsers = [];
+        let typingUsers = new Set();
+        let isTyping = false;
+        let typingTimeout;
+        let rightClickedMsgId = null;
 
-        const chatbox = document.getElementById("chatbox");
-        const users = document.getElementById("users");
-        const usersMobile = document.getElementById("usersMobile");
-        const menuBtn = document.getElementById("menuBtn");
-        const mobileUsers = document.getElementById("mobileUsers");
+        // Elements
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const userList = document.getElementById('userList');
+        const contextMenu = document.getElementById('contextMenu');
+        const imagePreviewModal = document.getElementById('imagePreviewModal');
+        const fullSizeImg = document.getElementById('fullSizeImg');
+        const emojiBtn = document.getElementById('emojiBtn');
+        const emojiPickerWrapper = document.getElementById('emojiPickerWrapper');
+        const searchInput = document.getElementById('searchUsers');
+        
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const previewImg = document.getElementById('previewImg');
+        const previewFileCard = document.getElementById('previewFileCard');
+        const cancelFileBtn = document.getElementById('cancelFileBtn');
 
-        const message = document.getElementById("message");
-        const emojiBtn = document.getElementById("emojiBtn");
-        const emojiPickerWrapper = document.getElementById("emojiPickerWrapper");
-        const emojiPicker = document.getElementById("emojiPicker");
+        // Init UI
+        document.getElementById('currentRoomId').innerText = roomId;
+        document.getElementById('headerRoomName').innerText = `Room: ${roomId}`;
 
-        const plusBtn = document.getElementById("plusBtn");
-        const fileMenu = document.getElementById("fileMenu");
-        const fileInput = document.getElementById("fileInput");
-        const sendFileBtn = document.getElementById("sendFileBtn");
+        // Join Room
+        const handleJoin = () => {
+            const name = document.getElementById('usernameInput').value.trim();
+            if (!name) return;
+            myName = name;
+            localStorage.setItem('chat-username', name);
+            socket.emit('join-room', { name, room: roomId });
+            
+            document.getElementById('splashScreen').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                document.getElementById('splashScreen').style.display = 'none';
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('myNameLabel').innerText = myName;
+                document.getElementById('myAvatar').innerText = myName.charAt(0).toUpperCase();
+                messageInput.focus();
+            }, 300);
+        };
+        document.getElementById('joinBtn').onclick = handleJoin;
+        if (myName) document.getElementById('usernameInput').value = myName;
 
-        let name = localStorage.getItem("chat-username");
-        if (!name) {
-            name = prompt("Enter your name").trim();
-            localStorage.setItem("chat-username", name);
-        }
-
-        socket.emit("name", name);
-
-        menuBtn.onclick = toggleUsers;
-        function toggleUsers() {
-            mobileUsers.classList.toggle("hidden");
-        }
-
-        plusBtn.onclick = () => fileMenu.classList.toggle("hidden");
-
-        emojiBtn.onclick = () =>
-            emojiPickerWrapper.classList.toggle("hidden");
-
-        emojiPicker.addEventListener("emoji-click", e => {
-            message.value += e.detail.unicode;
-            emojiPickerWrapper.classList.add("hidden");
+        // Emoji Picker
+        emojiBtn.onclick = (e) => {
+            e.stopPropagation();
+            emojiPickerWrapper.classList.toggle('hidden');
+        };
+        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+            messageInput.value += event.detail.unicode;
+            messageInput.dispatchEvent(new Event('input'));
+            emojiPickerWrapper.classList.add('hidden');
         });
+        document.body.onclick = () => emojiPickerWrapper.classList.add('hidden');
 
-        function appendMessage(text, type) {
-            const div = document.createElement("div");
-            div.className =
-                type === "outgoing"
-                    ? "bg-emerald-500 text-white ml-auto max-w-[75%] rounded-xl p-3 shadow"
-                    : "bg-white text-gray-800 max-w-[75%] rounded-xl p-3 shadow";
-
-            div.innerHTML = text;
-            chatbox.appendChild(div);
-            chatbox.scrollTop = chatbox.scrollHeight;
-        }
-
-        document.getElementById("btnsend").onclick = () => {
-            if (!message.value.trim()) return;
-            socket.emit("msg", message.value);
-            appendMessage("You: " + message.value, "outgoing");
-            message.value = "";
+        // Search Bar
+        searchInput.oninput = () => {
+            const term = searchInput.value.toLowerCase();
+            const filtered = activeUsers.filter(u => u.toLowerCase().includes(term));
+            renderUserList(filtered);
         };
 
-        socket.on("incoming", (data) => {
-            if (data.type === "text") {
-                appendMessage(`${data.name}: ${data.message}`, "incoming");
-            }
+        // Scroll Logic
+        const scrollToBottom = () => {
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        };
 
-            if (data.type === "file") {
-                appendMessage(
-                    `<b>${data.name}:</b><br>
-             <img src="${data.fileContent}" class="rounded max-w-[200px]">`,
-                    "incoming"
-                );
-            }
-        });
+        // File Sharing Logic
+        const formatSize = (bytes) => {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        };
 
-        socket.on("updateUsers", list => {
-            users.innerHTML = "";
-            usersMobile.innerHTML = "";
-            list.forEach(u => {
-                const li1 = document.createElement("li");
-                const li2 = document.createElement("li");
-                li1.className = li2.className = "px-4 py-3";
-                li1.innerText = li2.innerText = u;
-                users.appendChild(li1);
-                usersMobile.appendChild(li2);
-            });
-        });
+        const getFileIcon = (ext) => {
+            const map = {
+                pdf: 'fa-file-pdf',
+                zip: 'fa-file-zipper',
+                rar: 'fa-file-zipper',
+                doc: 'fa-file-word',
+                docx: 'fa-file-word',
+                xls: 'fa-file-excel',
+                xlsx: 'fa-file-excel',
+                ppt: 'fa-file-powerpoint',
+                pptx: 'fa-file-powerpoint',
+                txt: 'fa-file-lines',
+                js: 'fa-file-code',
+                html: 'fa-file-code',
+                css: 'fa-file-code',
+                mp3: 'fa-file-audio',
+                mp4: 'fa-file-video',
+                exe: 'fa-file-shield'
+            };
+            return map[ext.toLowerCase()] || 'fa-file-lines';
+        };
 
-        sendFileBtn.onclick = () => {
-            const file = fileInput.files[0];
+        attachBtn.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
-            reader.onload = e => {
-                socket.emit("file", {
-                    sender: name,
-                    fileName: file.name,
-                    fileContent: e.target.result
-                });
-                appendMessage(
-                    `<b>You:</b><br><img src="${e.target.result}" class="rounded max-w-[200px]">`,
-                    "outgoing"
-                );
+            reader.onload = (re) => {
+                const isImg = file.type.startsWith('image/');
+                document.getElementById('previewTypeLabel').innerHTML = `<i class="fa-solid fa-${isImg ? 'image' : 'file'}"></i> ${isImg ? 'IMAGE' : 'FILE'} PREVIEW`;
+                
+                if (isImg) {
+                    previewImg.src = re.target.result;
+                    previewImg.classList.remove('hidden');
+                    previewFileCard.classList.add('hidden');
+                } else {
+                    document.getElementById('previewFileName').innerText = file.name;
+                    document.getElementById('previewFileSize').innerText = formatSize(file.size);
+                    document.getElementById('previewFileIcon').className = `fa-solid ${getFileIcon(file.name.split('.').pop())}`;
+                    previewImg.classList.add('hidden');
+                    previewFileCard.classList.remove('hidden');
+                }
+                filePreview.classList.remove('hidden');
+                sendBtn.disabled = false;
             };
             reader.readAsDataURL(file);
         };
 
-        function rename() {
-            const n = prompt("Enter new name");
-            if (n) localStorage.setItem("chat-username", n);
+        const clearFile = () => {
+            fileInput.value = '';
+            filePreview.classList.add('hidden');
+            previewImg.classList.add('hidden');
+            previewFileCard.classList.add('hidden');
+        };
+        cancelFileBtn.onclick = clearFile;
+
+        // Message Handling
+        const sendMessage = () => {
+            const text = messageInput.value.trim();
+            const file = fileInput.files[0];
+            const msgId = Math.random().toString(36).substr(2, 9);
+
+            if (text && !file) {
+                socket.emit('msg', text);
+                appendMessage({ id: msgId, name: 'You', message: text, type: 'outgoing', time: now() });
+            }
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fileData = {
+                        fileName: file.name,
+                        fileContent: e.target.result,
+                        fileSize: formatSize(file.size),
+                        fileMime: file.type
+                    };
+                    socket.emit('file', fileData);
+                    
+                    const isImg = file.type.startsWith('image/');
+                    appendMessage({ 
+                        id: msgId + '_f', 
+                        name: 'You', 
+                        fileContent: e.target.result, 
+                        fileName: file.name,
+                        fileSize: formatSize(file.size),
+                        fileMime: file.type,
+                        type: isImg ? 'outgoing-image' : 'outgoing-file', 
+                        time: now(),
+                        message: text // message with file
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            clearFile();
+            sendBtn.disabled = true;
+            socket.emit('stop-typing');
+            isTyping = false;
+        };
+        sendBtn.onclick = sendMessage;
+        const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Custom Context Menu
+        window.oncontextmenu = (e) => {
+            const bubble = e.target.closest('.message-bubble');
+            if (bubble) {
+                e.preventDefault();
+                rightClickedMsgId = bubble.getAttribute('data-id');
+                contextMenu.style.display = 'block';
+                contextMenu.style.left = `${e.pageX}px`;
+                contextMenu.style.top = `${e.pageY}px`;
+            } else {
+                contextMenu.style.display = 'none';
+            }
+        };
+        document.onclick = () => contextMenu.style.display = 'none';
+        document.getElementById('deleteBtn').onclick = () => {
+            if (rightClickedMsgId) socket.emit('delete-msg', rightClickedMsgId);
+        };
+
+        // Socket Events
+        socket.on('incoming', (data) => {
+            let type = 'incoming';
+            if (data.type === 'file') {
+                type = data.fileMime.startsWith('image/') ? 'incoming-image' : 'incoming-file';
+            }
+            appendMessage({ ...data, type });
+        });
+        
+        socket.on('msg-deleted', (id) => {
+            const el = document.querySelector(`[data-id="${id}"]`);
+            if (el) {
+                el.innerHTML = '<span class="italic text-xs opacity-50 flex items-center gap-2"><i class="fa-solid fa-ban"></i> Message deleted</span>';
+                el.classList.add('opacity-50');
+            }
+        });
+        
+        socket.on('updateUsers', (users) => {
+            activeUsers = users;
+            renderUserList(users);
+        });
+        
+        socket.on('user-typing', (data) => {
+            typingUsers.add(data.id);
+            updateTypingIndicator(data.name);
+        });
+        
+        socket.on('user-stop-typing', (data) => {
+            typingUsers.delete(data.id);
+            updateTypingIndicator();
+        });
+
+        // Helpers
+        function appendMessage(data) {
+            const isOutgoing = data.type.startsWith('outgoing');
+            const div = document.createElement('div');
+            div.className = `flex ${isOutgoing ? 'justify-end' : 'justify-start'} animate-slide-up message-wrapper`;
+            
+            let content = '';
+            
+            if (data.type.includes('image')) {
+                const textHTML = data.message ? `<p class="whitespace-pre-wrap mb-3">${data.message}</p>` : '';
+                content = `
+                    ${textHTML}
+                    <img src="${data.fileContent}" onclick="previewImage(this.src)" class="rounded-2xl max-w-full md:max-w-md cursor-pointer hover:scale-[1.01] transition-transform shadow-sm">
+                `;
+            } else if (data.type.includes('file')) {
+                const ext = data.fileName.split('.').pop();
+                const textHTML = data.message ? `<p class="whitespace-pre-wrap mb-3">${data.message}</p>` : '';
+                content = `
+                    ${textHTML}
+                    <div class="flex items-center gap-4 bg-slate-100/10 p-4 rounded-2xl border border-slate-100/20 backdrop-blur-sm min-w-[200px]">
+                        <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary text-xl">
+                            <i class="fa-solid ${getFileIcon(ext)}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 pr-4">
+                            <p class="text-sm font-bold truncate">${data.fileName}</p>
+                            <p class="text-[10px] opacity-70">${data.fileSize || 'Unknown Size'}</p>
+                        </div>
+                        <a href="${data.fileContent}" download="${data.fileName}" onclick="event.stopPropagation()" class="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/40 text-current flex items-center justify-center transition-all">
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                    </div>
+                `;
+            } else {
+                content = `<p class="whitespace-pre-wrap">${data.message}</p>`;
+            }
+
+            div.innerHTML = `
+                <div class="message-bubble ${isOutgoing ? 'bg-primary text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none'} p-4 shadow-sm" data-id="${data.id}">
+                    ${!isOutgoing ? `<span class="block text-[10px] font-bold text-slate-400 uppercase mb-1">${data.name}</span>` : ''}
+                    ${content}
+                    <div class="flex items-center justify-end gap-1 mt-1 opacity-70 text-[9px]">
+                        <span>${data.time}</span>
+                        ${isOutgoing ? '<i class="fa-solid fa-check-double"></i>' : ''}
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(div);
+            scrollToBottom();
         }
 
-        function exitChat() {
-            location.href = "https://google.com";
-        }
+
+
+        window.previewImage = (src) => {
+            fullSizeImg.src = src;
+            imagePreviewModal.style.display = 'flex';
+        };
+        document.getElementById('closePreviewBtn').onclick = () => imagePreviewModal.style.display = 'none';
+
+        window.renderUserList = (users) => {
+            userList.innerHTML = users.map(u => `
+                <li class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border-2 border-white shadow-sm ring-1 ring-slate-200">
+                        ${u.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-slate-700 truncate">${u} ${u === myName ? '<span class="text-xs text-slate-400 font-normal ml-1">(You)</span>' : ''}</p>
+                        <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Online</p>
+                    </div>
+                </li>
+            `).join('');
+        };
+
+        window.copyRoomLink = () => {
+            navigator.clipboard.writeText(window.location.href);
+            const btn = document.querySelector('[onclick="copyRoomLink()"] span');
+            if(btn) {
+                const old = btn.innerText;
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = old, 2000);
+            }
+        };
+
+        messageInput.oninput = () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
+            sendBtn.disabled = !messageInput.value.trim() && !fileInput.files[0];
+            if (!isTyping) { isTyping = true; socket.emit('typing'); }
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => { isTyping = false; socket.emit('stop-typing'); }, 2000);
+        };
+
+        const updateTypingIndicator = (name) => {
+            const indicator = document.getElementById('typingIndicator');
+            const text = document.getElementById('typingText');
+            if (typingUsers.size > 0) {
+                text.innerText = typingUsers.size === 1 ? `${name || 'Someone'} is typing...` : `${typingUsers.size} people typing...`;
+                indicator.style.opacity = '1';
+            } else {
+                indicator.style.opacity = '0';
+            }
+        };
+
+        window.handleLogout = () => { if(confirm('Exit chat?')) { localStorage.removeItem('chat-username'); window.location.href = '/'; } };
+        window.handleRename = () => { const n = prompt('New name:', myName); if(n) { localStorage.setItem('chat-username', n); location.reload(); } };
+        
+        document.getElementById('openSidebarBtn').onclick = () => document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('closeSidebarBtn').onclick = () => document.getElementById('sidebar').classList.add('-translate-x-full');
+        
+        socket.on('name', (msg) => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-center my-2';
+            div.innerHTML = `<span class="bg-slate-200/50 text-[10px] font-bold text-slate-500 py-1 px-3 rounded-full uppercase tracking-wider backdrop-blur-sm">${msg}</span>`;
+            chatMessages.appendChild(div);
+            scrollToBottom();
+        });
     </script>
 </body>
-
 </html>
